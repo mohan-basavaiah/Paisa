@@ -114,7 +114,11 @@ textarea{resize:none;min-height:60px}
   background:var(--bg);border-radius:24px 24px 0 0;padding:20px 16px max(20px,env(safe-area-inset-bottom));
   max-height:92vh;overflow-y:auto;animation:up .3s cubic-bezier(.2,.8,.2,1)}
 @keyframes up{from{transform:translateY(100%)}to{transform:none}}
-.sheet .grab{width:40px;height:4px;background:var(--line);border-radius:4px;margin:0 auto 16px}
+.sheet .grab{width:40px;height:5px;background:var(--line);border-radius:4px;margin:0 auto 16px;cursor:pointer}
+.sheet .shead{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.sheet .shead h2{margin:0}
+.xbtn{width:34px;height:34px;border-radius:50%;background:var(--card2);border:1px solid var(--line);
+  display:grid;place-items:center;font-size:18px;color:var(--txt2);cursor:pointer;flex-shrink:0;line-height:1}
 .sheet h2{font-family:'Fraunces',serif;font-size:22px;font-weight:600;margin-bottom:18px}
 
 /* progress bars */
@@ -283,8 +287,8 @@ svg.line{width:100%;height:140px;display:block}
 <div class="sheet" id="expSheet">
   <div class="bg" onclick="closeSheet('expSheet')"></div>
   <div class="pane">
-    <div class="grab"></div>
-    <h2 id="expTitle">Add Expense</h2>
+    <div class="grab" onclick="closeSheet('expSheet')"></div>
+    <div class="shead"><h2 id="expTitle">Add Expense</h2><div class="xbtn" onclick="closeSheet('expSheet')">✕</div></div>
     <input class="amtbig mono" id="exAmt" type="number" inputmode="decimal" placeholder="₹0" autocomplete="off">
     <div class="field"><label>Category</label><div class="chips" id="exCats"></div></div>
     <div class="field"><label>Payment method</label><div class="chips" id="exPays"></div></div>
@@ -292,7 +296,7 @@ svg.line{width:100%;height:140px;display:block}
     <div class="field"><label>Date &amp; time</label><input class="input" type="datetime-local" id="exDate"></div>
     <div class="field"><label>Notes (optional)</label><textarea id="exNotes"></textarea></div>
     <button class="btn" onclick="saveExpense()">Save expense</button>
-    <button class="btn danger" id="exDel" style="margin-top:10px;display:none" onclick="deleteExpense()">Delete</button>
+    <button class="btn danger" id="exDel" style="margin-top:10px;display:none" onclick="deleteExpense()">Delete expense</button>
   </div>
 </div>
 
@@ -300,8 +304,8 @@ svg.line{width:100%;height:140px;display:block}
 <div class="sheet" id="billSheet">
   <div class="bg" onclick="closeSheet('billSheet')"></div>
   <div class="pane">
-    <div class="grab"></div>
-    <h2 id="billTitle">Add Bill</h2>
+    <div class="grab" onclick="closeSheet('billSheet')"></div>
+    <div class="shead"><h2 id="billTitle">Add Bill</h2><div class="xbtn" onclick="closeSheet('billSheet')">✕</div></div>
     <div class="field"><label>Bill name</label><input class="input" id="blName" placeholder="e.g. Rent"></div>
     <div class="field"><label>Amount ₹</label><input class="input mono" type="number" id="blAmt" inputmode="decimal"></div>
     <div class="field"><label>Frequency</label><div class="chips" id="blFreq">
@@ -322,8 +326,8 @@ svg.line{width:100%;height:140px;display:block}
 <div class="sheet" id="budgetSheet">
   <div class="bg" onclick="closeSheet('budgetSheet')"></div>
   <div class="pane">
-    <div class="grab"></div>
-    <h2>Monthly Budgets</h2>
+    <div class="grab" onclick="closeSheet('budgetSheet')"></div>
+    <div class="shead"><h2>Monthly Budgets</h2><div class="xbtn" onclick="closeSheet('budgetSheet')">✕</div></div>
     <div id="budgetInputs"></div>
     <button class="btn" onclick="saveBudgets()">Save budgets</button>
   </div>
@@ -333,8 +337,8 @@ svg.line{width:100%;height:140px;display:block}
 <div class="sheet" id="dataSheet">
   <div class="bg" onclick="closeSheet('dataSheet')"></div>
   <div class="pane">
-    <div class="grab"></div>
-    <h2>Data &amp; Backup</h2>
+    <div class="grab" onclick="closeSheet('dataSheet')"></div>
+    <div class="shead"><h2>Data &amp; Backup</h2><div class="xbtn" onclick="closeSheet('dataSheet')">✕</div></div>
     <button class="btn sec" onclick="exportCSV()" style="margin-bottom:10px">Export expenses to CSV</button>
     <button class="btn sec" onclick="exportJSON()" style="margin-bottom:10px">Backup all data (JSON)</button>
     <label class="btn sec" style="margin-bottom:10px;display:block;text-align:center">Restore from backup
@@ -630,7 +634,13 @@ function saveExpense(){
   else{o.id=mk();expenses.push(o);catUsage[cat]=(catUsage[cat]||0)+1}
   persist();closeSheet('expSheet');toast(editId?'Updated':'Saved ✓');go('home');
 }
-function deleteExpense(){if(!editId)return;expenses=expenses.filter(x=>x.id!==editId);persist();closeSheet('expSheet');toast('Deleted');go('expenses')}
+function deleteExpense(){
+  if(!editId)return;
+  if(!confirm('Delete this expense?'))return;
+  expenses=expenses.filter(x=>x.id!==editId);
+  persist();closeSheet('expSheet');toast('Deleted');
+  renderExpenses();renderHome();
+}
 
 // ---- BILL sheet ----
 let editBill=null;
