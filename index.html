@@ -164,9 +164,13 @@ svg.line{width:100%;height:140px;display:block}
       <div class="lbl">Spent this month</div>
       <div class="big mono" id="h-spent">₹0</div>
       <div class="row">
+        <div>In<b class="mono" id="h-in">₹0</b></div>
+        <div>Net<b class="mono" id="h-net">₹0</b></div>
+        <div>Bills due<b class="mono" id="h-bills">₹0</b></div>
+      </div>
+      <div class="row" style="margin-top:6px;opacity:.85">
         <div>Budget left<b class="mono" id="h-left">₹0</b></div>
         <div>Daily avg<b class="mono" id="h-avg">₹0</b></div>
-        <div>Bills due<b class="mono" id="h-bills">₹0</b></div>
       </div>
     </div>
 
@@ -183,6 +187,12 @@ svg.line{width:100%;height:140px;display:block}
     <div class="card">
       <h3>Due this week <span class="small" id="weekCount"></span></h3>
       <div id="dueWeek"></div>
+    </div>
+
+    <div class="card">
+      <h3>📌 Reminders <span class="small" style="cursor:pointer;color:var(--accent)" onclick="openReminders()">Manage →</span></h3>
+      <div id="remHome"></div>
+      <button class="btn sec" style="margin-top:10px" onclick="openReminder()">+ Add reminder</button>
     </div>
 
     <div class="card">
@@ -244,6 +254,10 @@ svg.line{width:100%;height:140px;display:block}
       <div class="stat"><div class="lbl">Last month</div><div class="v mono" id="st-last">₹0</div></div>
     </div>
     <div class="card">
+      <h3>Income vs spending (this month)</h3>
+      <div id="st-flow" style="font-size:15px"></div>
+    </div>
+    <div class="card">
       <h3>vs last month</h3>
       <div id="st-compare" style="font-size:15px"></div>
     </div>
@@ -283,20 +297,31 @@ svg.line{width:100%;height:140px;display:block}
   <button class="tab" data-s="budget" onclick="go('budget')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Budget</button>
 </nav>
 
-<!-- EXPENSE SHEET -->
+<!-- EXPENSE / INCOME SHEET -->
 <div class="sheet" id="expSheet">
   <div class="bg" onclick="closeSheet('expSheet')"></div>
   <div class="pane">
     <div class="grab" onclick="closeSheet('expSheet')"></div>
     <div class="shead"><h2 id="expTitle">Add Expense</h2><div class="xbtn" onclick="closeSheet('expSheet')">✕</div></div>
+    <div class="seg" id="typeSeg">
+      <button id="segExp" class="on" onclick="setEntryType('exp')">− Expense</button>
+      <button id="segInc" onclick="setEntryType('inc')">+ Income</button>
+    </div>
     <input class="amtbig mono" id="exAmt" type="number" inputmode="decimal" placeholder="₹0" autocomplete="off">
-    <div class="field"><label>Category</label><div class="chips" id="exCats"></div></div>
-    <div class="field"><label>Payment method</label><div class="chips" id="exPays"></div></div>
-    <div class="field"><label>Merchant / Description</label><input class="input" id="exMerch" placeholder="e.g. Zomato"></div>
+    <!-- expense-only fields -->
+    <div id="expFields">
+      <div class="field"><label>Category</label><div class="chips" id="exCats"></div></div>
+      <div class="field"><label>Payment method</label><div class="chips" id="exPays"></div></div>
+      <div class="field"><label>Merchant / Description</label><input class="input" id="exMerch" placeholder="e.g. Zomato"></div>
+    </div>
+    <!-- income-only fields -->
+    <div id="incFields" style="display:none">
+      <div class="field"><label>Source</label><div class="chips" id="exSrcs"></div></div>
+    </div>
     <div class="field"><label>Date &amp; time</label><input class="input" type="datetime-local" id="exDate"></div>
     <div class="field"><label>Notes (optional)</label><textarea id="exNotes"></textarea></div>
-    <button class="btn" onclick="saveExpense()">Save expense</button>
-    <button class="btn danger" id="exDel" style="margin-top:10px;display:none" onclick="deleteExpense()">Delete expense</button>
+    <button class="btn" id="exSaveBtn" onclick="saveEntry()">Save expense</button>
+    <button class="btn danger" id="exDel" style="margin-top:10px;display:none" onclick="deleteEntry()">Delete</button>
   </div>
 </div>
 
@@ -314,7 +339,12 @@ svg.line{width:100%;height:140px;display:block}
     </div></div>
     <div class="field" id="blMonthWrap" style="display:none"><label>Renewal month</label>
       <select id="blMonth"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>
-    <div class="field"><label>Due day of month</label><input class="input" type="number" id="blDay" min="1" max="31" placeholder="1-31"></div>
+    <div class="field"><label>Due day of month</label>
+      <select class="input" id="blDay">
+        <option value="" disabled selected>Select day</option>
+        <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option><option>21</option><option>22</option><option>23</option><option>24</option><option>25</option><option>26</option><option>27</option><option>28</option><option>29</option><option>30</option><option>31</option>
+      </select>
+      <div class="small" style="margin-top:5px">For 29–31, months that are shorter will use their last day.</div></div>
     <div class="field"><label>Category</label><div class="chips" id="blCats"></div></div>
     <div class="field"><label>Notes (optional)</label><textarea id="blNotes"></textarea></div>
     <button class="btn" onclick="saveBill()">Save bill</button>
@@ -350,9 +380,37 @@ svg.line{width:100%;height:140px;display:block}
 
 <div class="toast" id="toast"></div>
 
+<!-- REMINDERS LIST SHEET -->
+<div class="sheet" id="remListSheet">
+  <div class="bg" onclick="closeSheet('remListSheet')"></div>
+  <div class="pane">
+    <div class="grab" onclick="closeSheet('remListSheet')"></div>
+    <div class="shead"><h2>📌 Reminders</h2><div class="xbtn" onclick="closeSheet('remListSheet')">✕</div></div>
+    <button class="btn" style="margin-bottom:16px" onclick="openReminder()">+ Add reminder</button>
+    <div id="remListAll"></div>
+  </div>
+</div>
+
+<!-- ADD/EDIT REMINDER SHEET -->
+<div class="sheet" id="remSheet">
+  <div class="bg" onclick="closeSheet('remSheet')"></div>
+  <div class="pane">
+    <div class="grab" onclick="closeSheet('remSheet')"></div>
+    <div class="shead"><h2 id="remTitle">Add Reminder</h2><div class="xbtn" onclick="closeSheet('remSheet')">✕</div></div>
+    <div class="field"><label>What do you need to remember?</label><input class="input" id="rmName" placeholder="e.g. Baby vaccination — 6 month dose"></div>
+    <div class="field"><label>Date &amp; time</label><input class="input" type="datetime-local" id="rmDate"></div>
+    <div class="field"><label>Notes (optional)</label><textarea id="rmNotes" placeholder="e.g. Clinic, doctor, what to carry"></textarea></div>
+    <button class="btn" onclick="saveReminder()">Save reminder</button>
+    <button class="btn sec" id="rmCal" style="margin-top:10px" onclick="addReminderToCalendar()">📅 Add to phone Calendar (with alert)</button>
+    <button class="btn danger" id="rmDel" style="margin-top:10px;display:none" onclick="deleteReminder()">Delete reminder</button>
+  </div>
+</div>
+
 <script>
 const CATS=[{n:'Food',i:'🍜'},{n:'Groceries',i:'🛒'},{n:'Travel',i:'✈️'},{n:'Fuel',i:'⛽'},{n:'Shopping',i:'🛍️'},{n:'Entertainment',i:'🎬'},{n:'Medical',i:'💊'},{n:'Utilities',i:'💡'},{n:'Bills',i:'📄'},{n:'Investment',i:'📈'},{n:'Other',i:'•'}];
 const PAYS=['UPI','Cash','Credit Card','Debit Card','Other'];
+const SRCS=[{n:'Salary',i:'💼'},{n:'Cashback',i:'💸'},{n:'Refund',i:'↩️'},{n:'Gift',i:'🎁'},{n:'Freelance',i:'🧑‍💻'},{n:'Other',i:'•'}];
+const srcIcon=n=>(SRCS.find(s=>s.n===n)||{i:'•'}).i;
 const catIcon=n=>(CATS.find(c=>c.n===n)||{i:'•'}).i;
 const fmt=n=>'₹'+Math.round(n).toLocaleString('en-IN');
 const mk=()=>Date.now()+''+Math.floor(Math.random()*999);
@@ -370,8 +428,10 @@ let payments=DB.load('pay',{});      // {billId: ['2026-06', ...]}
 let budgets=DB.load('budget',{});    // {Food:10000,...}
 let theme=DB.load('theme','dark');
 let catUsage=DB.load('catuse',{});   // frequency for sorting
+let reminders=DB.load('rem',[]);     // [{id,title,date,notes,done}]
+let income=DB.load('inc',[]);        // [{id,amt,src,date,notes}]
 
-function persist(){DB.save('exp',expenses);DB.save('bills',bills);DB.save('pay',payments);DB.save('budget',budgets);DB.save('catuse',catUsage)}
+function persist(){DB.save('exp',expenses);DB.save('bills',bills);DB.save('pay',payments);DB.save('budget',budgets);DB.save('catuse',catUsage);DB.save('rem',reminders);DB.save('inc',income)}
 
 // ---- theme ----
 function applyTheme(){document.body.classList.toggle('light',theme==='light');document.getElementById('themeBtn').textContent=theme==='light'?'☀':'◐'}
@@ -394,6 +454,7 @@ function toast(m){const t=document.getElementById('toast');t.textContent=m;t.cla
 // ---- helpers ----
 function monthExpenses(mk=nowMonth()){return expenses.filter(e=>monthKey(e.date)===mk)}
 function monthTotal(mk=nowMonth()){return monthExpenses(mk).reduce((s,e)=>s+e.amt,0)}
+function monthIncome(mk=nowMonth()){return income.filter(e=>monthKey(e.date)===mk).reduce((s,e)=>s+e.amt,0)}
 function sortedCats(){return [...CATS].sort((a,b)=>(catUsage[b.n]||0)-(catUsage[a.n]||0))}
 function periodKey(b,ref=new Date()){ // current period identifier
   return b.freq==='yearly' ? String(ref.getFullYear()) : monthKey(ref);
@@ -419,10 +480,15 @@ function renderHome(){
   const mk=nowMonth();
   document.getElementById('monthLbl').textContent=new Date().toLocaleDateString('en-IN',{month:'long',year:'numeric'});
   const spent=monthTotal();
+  const inc=monthIncome();
   const totalBud=Object.values(budgets).reduce((a,b)=>a+b,0);
   const unpaidBills=bills.filter(b=>!isPaid(b)).reduce((s,b)=>s+b.amt,0);
   const day=new Date().getDate();
   document.getElementById('h-spent').textContent=fmt(spent);
+  document.getElementById('h-in').textContent=fmt(inc);
+  const net=inc-spent;
+  const netEl=document.getElementById('h-net');
+  netEl.textContent=(net<0?'-':'+')+fmt(Math.abs(net)).replace('₹','₹');
   document.getElementById('h-left').textContent=totalBud?fmt(Math.max(0,totalBud-spent)):'—';
   document.getElementById('h-avg').textContent=fmt(spent/day);
   document.getElementById('h-bills').textContent=fmt(unpaidBills);
@@ -453,9 +519,32 @@ function renderHome(){
     return `<div class="catbar"><div class="nm">${catIcon(c)} ${c}</div><div class="bar"><i style="width:${pc}%"></i></div><div class="pc mono">${fmt(v)}</div></div>`;
   }).join(''):'<div class="empty">No spending yet</div>';
 
-  // recent
-  const rec=[...expenses].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
-  document.getElementById('recent').innerHTML=rec.length?rec.map(expRow).join(''):'<div class="empty">Tap + to add your first expense</div>';
+  // recent (expenses + income, newest first)
+  const recItems=[...expenses.map(e=>({...e,_t:'exp'})),...income.map(i=>({...i,_t:'inc'}))]
+    .sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,6);
+  document.getElementById('recent').innerHTML=recItems.length?recItems.map(it=>it._t==='inc'?incRow(it):expRow(it)).join(''):'<div class="empty">Tap + to add your first entry</div>';
+
+  renderRemHome();
+}
+function renderRemHome(){
+  // show overdue (not done) + upcoming within 7 days, soonest first
+  const wk=new Date();wk.setHours(0,0,0,0);wk.setDate(wk.getDate()+7);
+  const list=reminders.filter(r=>!r.done).map(r=>({r,d:new Date(r.date)}))
+    .filter(x=>x.d<=wk).sort((a,b)=>a.d-b.d).slice(0,4);
+  const el=document.getElementById('remHome');
+  if(!el)return;
+  el.innerHTML=list.length?list.map(x=>remRow(x.r)).join(''):'<div class="empty">Nothing due soon ✓</div>';
+}
+function remRow(r){
+  const d=new Date(r.date);const days=daysUntil(d);
+  const when=r.done?'done':days<0?'overdue':days===0?'today':days===1?'tomorrow':'in '+days+' days';
+  const cls=r.done?'paid':days<0?'over':'due';
+  const dateStr=d.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+', '+d.toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'});
+  return `<div class="item">
+    <div class="ic" onclick="toggleRem('${r.id}',event)" style="cursor:pointer">${r.done?'✅':'⏰'}</div>
+    <div class="mid" onclick="openReminder('${r.id}')"><div class="nm" style="${r.done?'text-decoration:line-through;opacity:.6':''}">${r.title}</div>
+    <div class="meta">${dateStr}</div></div>
+    <div style="text-align:right"><span class="pill ${cls}">${when}</span></div></div>`;
 }
 function expRow(e){
   const d=new Date(e.date);
@@ -464,6 +553,14 @@ function expRow(e){
     <div class="mid"><div class="nm">${e.merch||e.cat}</div>
     <div class="meta">${e.cat} · ${e.pay} · ${d.toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div></div>
     <div class="amt out mono">${fmt(e.amt)}</div></div>`;
+}
+function incRow(e){
+  const d=new Date(e.date);
+  return `<div class="item" onclick="openIncome('${e.id}')">
+    <div class="ic" style="background:rgba(125,240,192,.15)">${srcIcon(e.src)}</div>
+    <div class="mid"><div class="nm">${e.notes||e.src}</div>
+    <div class="meta">${e.src} · ${d.toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div></div>
+    <div class="amt mono" style="color:var(--good)">+${fmt(e.amt)}</div></div>`;
 }
 function billRow(b){
   const st=billStatus(b);const due=billDueDate(b);
@@ -549,6 +646,14 @@ function renderStats(){
       :diff<0?`<span style="color:var(--good)">▼ ${pc}% less</span> than last month (${fmt(-diff)} saved)`
       :'Exactly the same as last month.';}
   document.getElementById('st-compare').innerHTML=cmp;
+  // income vs spending flow
+  const inc=monthIncome(mk);const net=inc-tThis;
+  const sr={};income.filter(e=>monthKey(e.date)===mk).forEach(e=>sr[e.src]=(sr[e.src]||0)+e.amt);
+  const srcLine=Object.entries(sr).sort((a,b)=>b[1]-a[1]).map(([s,v])=>`${srcIcon(s)} ${s} ${fmt(v)}`).join(' · ');
+  document.getElementById('st-flow').innerHTML=
+    `<div>In: <b style="color:var(--good)">${fmt(inc)}</b> &nbsp; Out: <b>${fmt(tThis)}</b></div>`+
+    `<div style="margin-top:6px">Net: <b style="color:${net>=0?'var(--good)':'var(--bad)'}">${net>=0?'+':'-'}${fmt(Math.abs(net))}</b> ${net>=0?'saved':'overspent'}</div>`+
+    (srcLine?`<div class="small" style="margin-top:8px">${srcLine}</div>`:'<div class="small" style="margin-top:8px">No income logged this month</div>');
   // trend
   drawTrend();
   // breakdown
@@ -598,48 +703,167 @@ function openBudget(){
 }
 function saveBudgets(){CATS.forEach(c=>{const v=parseFloat(document.getElementById('bud_'+c.n).value);if(v>0)budgets[c.n]=v;else delete budgets[c.n]});persist();closeSheet('budgetSheet');renderBudget();toast('Budgets saved')}
 
-// ---- EXPENSE sheet ----
-let editId=null;
-function openExpense(id){
-  editId=id||null;
-  const cont=document.getElementById('exCats');
-  cont.innerHTML=sortedCats().map(c=>`<div class="chip" data-c="${c.n}" onclick="pick(this,'exCats')">${c.i} ${c.n}</div>`).join('');
+// ---- ENTRY sheet (expense or income) ----
+let editId=null;       // editing expense id
+let editIncId=null;    // editing income id
+let entryType='exp';   // 'exp' | 'inc'
+function setEntryType(t){
+  entryType=t;
+  document.getElementById('segExp').classList.toggle('on',t==='exp');
+  document.getElementById('segInc').classList.toggle('on',t==='inc');
+  document.getElementById('expFields').style.display=t==='exp'?'block':'none';
+  document.getElementById('incFields').style.display=t==='inc'?'block':'none';
+  document.getElementById('exSaveBtn').textContent=t==='exp'?'Save expense':'Save income';
+  const title=document.getElementById('expTitle');
+  const editing=(t==='exp'&&editId)||(t==='inc'&&editIncId);
+  title.textContent=(editing?'Edit ':'Add ')+(t==='exp'?'Expense':'Income');
+}
+function buildEntryChips(){
+  document.getElementById('exCats').innerHTML=sortedCats().map(c=>`<div class="chip" data-c="${c.n}" onclick="pick(this,'exCats')">${c.i} ${c.n}</div>`).join('');
   document.getElementById('exPays').innerHTML=PAYS.map(p=>`<div class="chip" data-c="${p}" onclick="pick(this,'exPays')">${p}</div>`).join('');
+  document.getElementById('exSrcs').innerHTML=SRCS.map(s=>`<div class="chip" data-c="${s.n}" onclick="pick(this,'exSrcs')">${s.i} ${s.n}</div>`).join('');
+}
+function resetEntryCommon(){
+  document.getElementById('exAmt').value='';
+  document.getElementById('exMerch').value='';
+  document.getElementById('exNotes').value='';
+  document.getElementById('exDate').value=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+  document.getElementById('exDel').style.display='none';
+}
+function openExpense(id){
+  editId=id||null;editIncId=null;
+  buildEntryChips();
   if(id){
     const e=expenses.find(x=>x.id===id);
-    document.getElementById('expTitle').textContent='Edit Expense';
     document.getElementById('exAmt').value=e.amt;document.getElementById('exMerch').value=e.merch||'';
     document.getElementById('exDate').value=e.date.slice(0,16);document.getElementById('exNotes').value=e.notes||'';
     selChip('exCats',e.cat);selChip('exPays',e.pay);
     document.getElementById('exDel').style.display='block';
   }else{
-    document.getElementById('expTitle').textContent='Add Expense';
-    document.getElementById('exAmt').value='';document.getElementById('exMerch').value='';document.getElementById('exNotes').value='';
-    document.getElementById('exDate').value=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+    resetEntryCommon();
     selChip('exCats',sortedCats()[0].n);selChip('exPays','UPI');
-    document.getElementById('exDel').style.display='none';
   }
+  setEntryType('exp');
+  openSheet('expSheet');setTimeout(()=>document.getElementById('exAmt').focus(),300);
+}
+function openIncome(id){
+  editIncId=id||null;editId=null;
+  buildEntryChips();
+  if(id){
+    const e=income.find(x=>x.id===id);
+    document.getElementById('exAmt').value=e.amt;document.getElementById('exNotes').value=e.notes||'';
+    document.getElementById('exDate').value=e.date.slice(0,16);
+    selChip('exSrcs',e.src);
+    document.getElementById('exDel').style.display='block';
+  }else{
+    resetEntryCommon();
+    selChip('exSrcs','Salary');
+  }
+  setEntryType('inc');
   openSheet('expSheet');setTimeout(()=>document.getElementById('exAmt').focus(),300);
 }
 function pick(el,cont){document.querySelectorAll('#'+cont+' .chip').forEach(c=>c.classList.remove('on'));el.classList.add('on')}
 function selChip(cont,val){document.querySelectorAll('#'+cont+' .chip').forEach(c=>c.classList.toggle('on',c.dataset.c===val))}
 function getChip(cont){const el=document.querySelector('#'+cont+' .chip.on');return el?el.dataset.c:null}
-function saveExpense(){
+function saveEntry(){
   const amt=parseFloat(document.getElementById('exAmt').value);
   if(!amt||amt<=0){toast('Enter an amount');return}
-  const cat=getChip('exCats')||'Other';
-  const o={amt,cat,pay:getChip('exPays')||'UPI',merch:document.getElementById('exMerch').value.trim(),
-    date:document.getElementById('exDate').value||new Date().toISOString(),notes:document.getElementById('exNotes').value.trim()};
-  if(editId){Object.assign(expenses.find(x=>x.id===editId),o)}
-  else{o.id=mk();expenses.push(o);catUsage[cat]=(catUsage[cat]||0)+1}
-  persist();closeSheet('expSheet');toast(editId?'Updated':'Saved ✓');go('home');
+  const date=document.getElementById('exDate').value||new Date().toISOString();
+  const notes=document.getElementById('exNotes').value.trim();
+  if(entryType==='inc'){
+    const src=getChip('exSrcs')||'Other';
+    const o={amt,src,date,notes};
+    if(editIncId){Object.assign(income.find(x=>x.id===editIncId),o)}
+    else{o.id=mk();income.push(o)}
+    persist();closeSheet('expSheet');toast(editIncId?'Updated':'Income saved ✓');go('home');
+  }else{
+    const cat=getChip('exCats')||'Other';
+    const o={amt,cat,pay:getChip('exPays')||'UPI',merch:document.getElementById('exMerch').value.trim(),date,notes};
+    if(editId){Object.assign(expenses.find(x=>x.id===editId),o)}
+    else{o.id=mk();expenses.push(o);catUsage[cat]=(catUsage[cat]||0)+1}
+    persist();closeSheet('expSheet');toast(editId?'Updated':'Saved ✓');go('home');
+  }
 }
-function deleteExpense(){
-  if(!editId)return;
-  if(!confirm('Delete this expense?'))return;
-  expenses=expenses.filter(x=>x.id!==editId);
-  persist();closeSheet('expSheet');toast('Deleted');
-  renderExpenses();renderHome();
+function deleteEntry(){
+  if(entryType==='inc'&&editIncId){
+    if(!confirm('Delete this income entry?'))return;
+    income=income.filter(x=>x.id!==editIncId);
+    persist();closeSheet('expSheet');toast('Deleted');renderExpenses();renderHome();
+  }else if(editId){
+    if(!confirm('Delete this expense?'))return;
+    expenses=expenses.filter(x=>x.id!==editId);
+    persist();closeSheet('expSheet');toast('Deleted');renderExpenses();renderHome();
+  }
+}
+
+// ---- REMINDERS ----
+let editRem=null;
+function openReminders(){renderRemList();openSheet('remListSheet')}
+function renderRemList(){
+  const sorted=[...reminders].sort((a,b)=>{
+    if(a.done!==b.done)return a.done?1:-1; // not-done first
+    return new Date(a.date)-new Date(b.date);
+  });
+  document.getElementById('remListAll').innerHTML=sorted.length?sorted.map(remRow).join(''):'<div class="empty">No reminders yet. Add one above.</div>';
+}
+function openReminder(id){
+  editRem=(typeof id==='string')?id:null;
+  if(editRem){
+    const r=reminders.find(x=>x.id===editRem);
+    document.getElementById('remTitle').textContent='Edit Reminder';
+    document.getElementById('rmName').value=r.title;
+    document.getElementById('rmDate').value=r.date.slice(0,16);
+    document.getElementById('rmNotes').value=r.notes||'';
+    document.getElementById('rmDel').style.display='block';
+  }else{
+    document.getElementById('remTitle').textContent='Add Reminder';
+    document.getElementById('rmName').value='';document.getElementById('rmNotes').value='';
+    const t=new Date(Date.now()-new Date().getTimezoneOffset()*60000);t.setHours(9,0,0,0);
+    document.getElementById('rmDate').value=t.toISOString().slice(0,16);
+    document.getElementById('rmDel').style.display='none';
+  }
+  openSheet('remSheet');
+}
+function saveReminder(){
+  const title=document.getElementById('rmName').value.trim();
+  const date=document.getElementById('rmDate').value;
+  if(!title){toast('Enter what to remember');return}
+  if(!date){toast('Pick a date');return}
+  const o={title,date,notes:document.getElementById('rmNotes').value.trim()};
+  if(editRem){Object.assign(reminders.find(x=>x.id===editRem),o)}
+  else{o.id=mk();o.done=false;reminders.push(o)}
+  persist();closeSheet('remSheet');renderHome();
+  if(document.getElementById('remListSheet').classList.contains('on'))renderRemList();
+  toast('Reminder saved');
+}
+function deleteReminder(){
+  if(!editRem)return;
+  if(!confirm('Delete this reminder?'))return;
+  reminders=reminders.filter(x=>x.id!==editRem);
+  persist();closeSheet('remSheet');renderHome();renderRemList();toast('Deleted');
+}
+function toggleRem(id,ev){
+  ev.stopPropagation();
+  const r=reminders.find(x=>x.id===id);if(!r)return;
+  r.done=!r.done;persist();renderHome();
+  if(document.getElementById('remListSheet').classList.contains('on'))renderRemList();
+  toast(r.done?'Marked done ✓':'Marked not done');
+}
+function pad(n){return String(n).padStart(2,'0')}
+function icsDate(d){return d.getUTCFullYear()+pad(d.getUTCMonth()+1)+pad(d.getUTCDate())+'T'+pad(d.getUTCHours())+pad(d.getUTCMinutes())+'00Z'}
+function addReminderToCalendar(){
+  const title=document.getElementById('rmName').value.trim();
+  const date=document.getElementById('rmDate').value;
+  if(!title||!date){toast('Enter title and date first');return}
+  const start=new Date(date);const end=new Date(start.getTime()+30*60000);
+  const notes=document.getElementById('rmNotes').value.trim().replace(/\n/g,'\\n');
+  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Paisa//EN','BEGIN:VEVENT',
+    'UID:'+mk()+'@paisa','DTSTAMP:'+icsDate(new Date()),'DTSTART:'+icsDate(start),'DTEND:'+icsDate(end),
+    'SUMMARY:'+title, notes?'DESCRIPTION:'+notes:'',
+    'BEGIN:VALARM','TRIGGER:-PT1H','ACTION:DISPLAY','DESCRIPTION:'+title,'END:VALARM',
+    'END:VEVENT','END:VCALENDAR'].filter(Boolean).join('\r\n');
+  dl('reminder.ics',ics,'text/calendar');
+  toast('Opening calendar…');
 }
 
 // ---- BILL sheet ----
@@ -683,21 +907,22 @@ function closeSheet(id){document.getElementById(id).classList.remove('on');docum
 function openData(){openSheet('dataSheet')}
 function dl(name,content,type){const b=new Blob([content],{type});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u)}
 function exportCSV(){
-  const rows=[['Date','Amount','Category','Payment','Merchant','Notes']];
-  [...expenses].sort((a,b)=>new Date(a.date)-new Date(b.date)).forEach(e=>rows.push([e.date,e.amt,e.cat,e.pay,e.merch||'',(e.notes||'').replace(/[\n,]/g,' ')]));
-  dl('paisa-expenses-'+nowMonth()+'.csv',rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n'),'text/csv');
+  const rows=[['Type','Date','Amount','Category/Source','Payment','Merchant','Notes']];
+  [...expenses].sort((a,b)=>new Date(a.date)-new Date(b.date)).forEach(e=>rows.push(['Expense',e.date,e.amt,e.cat,e.pay,e.merch||'',(e.notes||'').replace(/[\n,]/g,' ')]));
+  [...income].sort((a,b)=>new Date(a.date)-new Date(b.date)).forEach(e=>rows.push(['Income',e.date,e.amt,e.src,'','',(e.notes||'').replace(/[\n,]/g,' ')]));
+  dl('paisa-transactions-'+nowMonth()+'.csv',rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n'),'text/csv');
   toast('CSV exported');
 }
-function exportJSON(){dl('paisa-backup-'+nowMonth()+'.json',JSON.stringify({expenses,bills,payments,budgets,catUsage,v:1}),'application/json');toast('Backup saved')}
+function exportJSON(){dl('paisa-backup-'+nowMonth()+'.json',JSON.stringify({expenses,bills,payments,budgets,catUsage,reminders,income,v:1}),'application/json');toast('Backup saved')}
 function importJSON(ev){
   const f=ev.target.files[0];if(!f)return;const r=new FileReader();
   r.onload=()=>{try{const d=JSON.parse(r.result);
     if(!confirm('Replace all current data with this backup?'))return;
-    expenses=d.expenses||[];bills=d.bills||[];payments=d.payments||{};budgets=d.budgets||{};catUsage=d.catUsage||{};
+    expenses=d.expenses||[];bills=d.bills||[];payments=d.payments||{};budgets=d.budgets||{};catUsage=d.catUsage||{};reminders=d.reminders||[];income=d.income||[];
     persist();closeSheet('dataSheet');go('home');toast('Backup restored');
   }catch{toast('Invalid backup file')}};r.readAsText(f);
 }
-function wipeData(){if(!confirm('Erase ALL data permanently? This cannot be undone.'))return;expenses=[];bills=[];payments={};budgets={};catUsage={};persist();closeSheet('dataSheet');go('home');toast('All data erased')}
+function wipeData(){if(!confirm('Erase ALL data permanently? This cannot be undone.'))return;expenses=[];bills=[];payments={};budgets={};catUsage={};reminders=[];income=[];persist();closeSheet('dataSheet');go('home');toast('All data erased')}
 
 // long-press header opens data sheet; also add gear via theme btn double role — simplest: tap month label
 document.getElementById('monthLbl').addEventListener('click',openData);
