@@ -407,7 +407,7 @@ svg.line{width:100%;height:140px;display:block}
 </div>
 
 <script>
-const CATS=[{n:'Food',i:'🍜'},{n:'Groceries',i:'🛒'},{n:'Travel',i:'✈️'},{n:'Fuel',i:'⛽'},{n:'Shopping',i:'🛍️'},{n:'Entertainment',i:'🎬'},{n:'Medical',i:'💊'},{n:'Utilities',i:'💡'},{n:'Bills',i:'📄'},{n:'Investment',i:'📈'},{n:'Other',i:'•'}];
+const CATS=[{n:'Food',i:'🍜'},{n:'Groceries',i:'🛒'},{n:'Vegetables',i:'🥦'},{n:'Dairy',i:'🥛'},{n:'Travel',i:'✈️'},{n:'Fuel',i:'⛽'},{n:'Shopping',i:'🛍️'},{n:'Entertainment',i:'🎬'},{n:'Medical',i:'💊'},{n:'Utilities',i:'💡'},{n:'Bills',i:'📄'},{n:'Investment',i:'📈'},{n:'Other',i:'•'}];
 const PAYS=['UPI','Cash','Credit Card','Debit Card','Other'];
 const SRCS=[{n:'Salary',i:'💼'},{n:'Cashback',i:'💸'},{n:'Refund',i:'↩️'},{n:'Gift',i:'🎁'},{n:'Freelance',i:'🧑‍💻'},{n:'Other',i:'•'}];
 const srcIcon=n=>(SRCS.find(s=>s.n===n)||{i:'•'}).i;
@@ -543,8 +543,8 @@ function remRow(r){
   return `<div class="item">
     <div class="ic" onclick="toggleRem('${r.id}',event)" style="cursor:pointer">${r.done?'✅':'⏰'}</div>
     <div class="mid" onclick="openReminder('${r.id}')"><div class="nm" style="${r.done?'text-decoration:line-through;opacity:.6':''}">${r.title}</div>
-    <div class="meta">${dateStr}</div></div>
-    <div style="text-align:right"><span class="pill ${cls}">${when}</span></div></div>`;
+    <div class="meta">${dateStr} · <span class="pill ${cls}">${when}</span></div></div>
+    <button class="chip ${r.done?'on':''}" style="padding:6px 12px;font-size:12px" onclick="toggleRem('${r.id}',event)">${r.done?'✓ Done':'Mark done'}</button></div>`;
 }
 function expRow(e){
   const d=new Date(e.date);
